@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>用户登录</title>
+    <link rel="stylesheet" href="./stylesheets/style.css" />
+</head>
+
+<body>
+    <form id="userLogin">
+        <h3>用户登录</h3>
+        <input class="accountNumber" type="text" placeholder="请输入用户名" />
+        <input class="userPassWord" type="password" placeholder="请输入密码" />
+        <input class="userName" type="text" placeholder="请输入姓名" />
+        <button type="button" id="btn">登录</button>
+        <button type="button" class="regBtn">快速注册</button>
+    </form>
+    <script src="./javascripts/jquery-1.10.1.min.js"></script>
+    <script src="./javascripts/crypto-js.js"></script>
+    <script src="./javascripts/getFn.js"></script>
+    <script type="text/babel">
+    let str = {asd:123}
+       let cos =   Encrypt(str)  
+       console.log(cos); 
+        $(function () {
+            //登录
+            $("#btn").click(function () {
+                accountNumber = $(".accountNumber").val();
+                userPassWord = $(".userPassWord").val();
+                userName = $(".userName").val();
+                if(accountNumber === ''){
+                    $(".accountNumber").addClass("redText");
+                    return false;
+                }
+                if(userPassWord === ''){
+                    $(".userPassWord").addClass("redText");
+                    return false;
+                }
+                if(userName === ''){
+                    $(".userName").addClass("redText");
+                    return false;
+                }
+                ajax(formData("login"));
+            });
+            
+            //注册
+            $(".regBtn").click(function () {
+                window.location.href="./reg.html"
+            });
+        });
+    </script>
+    <script src="./javascripts/browser.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>快速注册</title>
+    <link rel="stylesheet" href="./stylesheets/style.css">
+</head>
+
+<body>
+    <form id="userLogin">
+        <h3>用户注册</h3>
+        <input class="accountNumber" type="text" placeholder="请输入用户名" />
+        <input class="userPassWord" type="password" placeholder="请输入密码" />
+        <input class="userPassWord2" type="password" placeholder="重复密码" />
+        <input class="userName" type="text" placeholder="请输入姓名" />
+        <button type="button" id="btn">立即注册</button>
+    </form>
+    <script src="./javascripts/jquery-1.10.1.min.js"></script>
+    <script src="./javascripts/getFn.js"></script>
+    <script>
+        $("#btn").click(function () {
+            accountNumber = $(".accountNumber").val();
+            userPassWord = $(".userPassWord").val();
+            userPassWord2 = $(".userPassWord2").val();
+            userName = $(".userName").val();
+            if (accountNumber === '') {
+                $(".accountNumber").addClass("redText");
+                return false;
+            }
+            if (userPassWord === '') {
+                $(".userPassWord").addClass("redText");
+                return false;
+            }
+            if( userPassWord2 != userPassWord){
+                alert("两次密码输入不一致！")
+                return false;
+            }
+            if (userName === '') {
+                $(".userName").addClass("redText");
+                return false;
+            }
+            ajax(formData("reg"))
+        });
+    </script>
+</body>
+
+</html>

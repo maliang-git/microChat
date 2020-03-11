@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>性能分析</title>
+</head>
+
+<body>
+    <input type="text" placeholder="请输入URL连接" value="https://www.baidu.com" />
+    <button type="button" onclick="testFn()">分析</button>
+    <script src="./javascripts/jquery-1.10.1.min.js"></script>
+    <script>
+        function testFn() {
+            var data = {
+                url:'https://www.baidu.com'
+            }
+            $.ajax({
+                url: "/validateLogon//test",
+                type: "post",
+                data: data,
+                success: res => {
+                    if (data.type === 'login') {
+                        if (res.code === 200) {
+                            alert("主页");
+                            return false
+                        }
+                    }
+                    if (data.type === 'reg') {
+                        if (res.code === 200) {
+                            window.location.href = "./index.html"
+                            return false
+                        }
+                    }
+                    alert(res.text)
+                },
+                fail: res => {
+                    console.log(res);
+                },
+                error: function(res) {
+                    console.log(res);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
