@@ -7,7 +7,7 @@ module.exports = {
     title: "微聊",
     meta: [
       { charset: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1,minimum-scale=1,maximum-scale=1, user-scalable=no, viewport-fit=cover" },
       {
         hid: "description",
         name: "description",
@@ -31,7 +31,7 @@ module.exports = {
   /*
    ** Global CSS
    */
-  css: ["mint-ui/lib/style.css", "~assets/css/reset.css"],
+  css: ["mint-ui/lib/style.css", "~assets/css/reset.css","~assets/font/iconfont/honey-icon.css"],
   /*
    ** Plugins to load before mounting the App
    */

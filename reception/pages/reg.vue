@@ -1,6 +1,9 @@
 <template>
     <div class="container">
         <Logo></Logo>
+        <mt-field placeholder="请输入昵称"
+                  v-model="formData.phone"
+                  style="width:100%;margin-bottom:20px;"></mt-field>
         <mt-field placeholder="请输入手机号"
                   v-model="formData.phone"
                   style="width:100%;margin-bottom:20px;"></mt-field>
@@ -8,9 +11,9 @@
                   v-model="formData.passWord"
                   style="width:100%;margin-bottom:20px;"></mt-field>
         <mt-button type="primary"
-                   style="width:100%;">登录</mt-button>
+                   style="width:100%;">立即注册</mt-button>
         <div class="regin">
-            <a class="reg-btn" @click="$router.push('/reg')">账号快速注册</a>
+            <a class="reg-btn" @click="$router.push('/')">登录</a>
         </div>
     </div>
 </template>
