@@ -4,7 +4,7 @@ module.exports = {
    ** Headers of the page
    */
   head: {
-    title: "微聊",
+    title: "蜜语",
     meta: [
       { charset: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1,minimum-scale=1,maximum-scale=1, user-scalable=no, viewport-fit=cover" },
@@ -35,7 +35,7 @@ module.exports = {
   /*
    ** Plugins to load before mounting the App
    */
-  plugins: ["@/plugins/mint-ui"],
+  plugins: ["@/plugins/mint-ui","@/plugins/compatible"],
   /*
    ** Nuxt.js dev-modules
    */

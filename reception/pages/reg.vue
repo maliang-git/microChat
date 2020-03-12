@@ -13,7 +13,8 @@
         <mt-button type="primary"
                    style="width:100%;">立即注册</mt-button>
         <div class="regin">
-            <a class="reg-btn" @click="$router.push('/')">登录</a>
+            <a class="reg-btn"
+               @click="$router.push('/')">登录</a>
         </div>
     </div>
 </template>
