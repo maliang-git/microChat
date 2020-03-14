@@ -28,7 +28,17 @@ export default {
                 passWord: ""
             }
         };
-    }
+    },
+    mounted() {
+        this.$axios.post("/api/user-center/register",{
+            accountNumber:'123',
+            password:'123',
+            name:'maliang',
+            type: 'login'
+        }).then(res=>{
+            console.log(res)
+        })
+    },
 };
 </script>
 <style lang="less">

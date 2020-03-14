@@ -35,7 +35,10 @@ module.exports = {
   /*
    ** Plugins to load before mounting the App
    */
-  plugins: ["@/plugins/mint-ui","@/plugins/compatible"],
+  plugins: ["@/plugins/mint-ui","@/plugins/compatible",{
+    src: '@/plugins/axios',
+    ssr: true
+  }],
   /*
    ** Nuxt.js dev-modules
    */
@@ -43,7 +46,25 @@ module.exports = {
   /*
    ** Nuxt.js modules
    */
-  modules: [],
+  modules: [
+    // Doc: https://github.com/nuxt-community/axios-module#usage
+    '@nuxtjs/axios'
+  ],
+  /*
+  ** Axios module configuration
+  */
+  axios: {
+    proxy: true,
+  },
+
+  proxy: {
+    '/api': { 
+      target: 'http://localhost:3002/',//这个网站是开源的可以请求到数据的
+      pathRewrite: {
+         '^/api': ''
+      }    
+    }
+  },
   /*
    ** Build configuration
    */
