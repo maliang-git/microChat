@@ -68,15 +68,19 @@ export default {
             this.$axios.post("/api/user-center/register", this.formData).then(res => {
                 Indicator.close();
                 if (res.code === 200) {
+                    this.formData = {
+                        loginName: "",
+                        phone: "",
+                        passWord: "",
+                        confirmPaw: ""
+                    }
                     Toast({
-                        message: res.msg,
-                        iconClass: 'icon icon-success'
+                        message: '注册成功'
                     })
+                    this.$router.go(-1)
                 } else {
                     Toast({
-                        message: res.msg,
-                        position: 'middle',
-                        duration: 5000
+                        message: res.msg
                     });
                 }
             })
@@ -88,7 +92,7 @@ export default {
 .mint-cell-wrapper {
     background-image: none;
 }
-.mint-indicator-wrapper{
+.mint-indicator-wrapper {
     display: flex;
     flex-direction: column;
 }

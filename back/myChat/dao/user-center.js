@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 /**
  * 引入加密插件
  * */
-// const {Decrypt,Encrypt} = require("../plugs/secret.js")
+const { Decrypt, Encrypt } = require("../plugs/secret.js");
 
 module.exports.daoRegister = async function(data) {
     const queryCriteria = {
@@ -15,15 +15,8 @@ module.exports.daoRegister = async function(data) {
     };
     var overData = await mongoose.model("userCenter").find(queryCriteria);
     if (overData.length != 1) {
-        // #生成不重复Token
-        function createToken(length) {
-            return Number(
-                Math.random()
-                    .toString()
-                    .substr(3, length) + Date.now()
-            ).toString(36);
-        }
-        const token = createToken(19);
+        // #生成唯一Token(当前时间戳+手机号)
+        const token = new Date().getTime() + Encrypt(data.phone);
         await mongoose.model("userCenter").create({
             token, // 用户Token
             loginName: data.loginName, // 用户昵称（*必传）
@@ -38,5 +31,5 @@ module.exports.daoRegister = async function(data) {
             data: "注册成功"
         };
     }
-    return { code: 414, text: "该账号已被占用！" };
+    return { code: 414, msg: "该账号已被占用！", data: null };
 };
