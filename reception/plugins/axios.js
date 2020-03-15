@@ -19,10 +19,8 @@ export default function({ $axios, redirect }) {
     response => {
       const result = response.data;
       const code = result.code;
-      if (process.env.NODE_ENV === "production") {
-        if (code === 5223) {
-          console.log("请登录");
-        }
+      if (code === 5223) {
+        redirect("/");
       }
       return result;
     },

@@ -60,6 +60,7 @@ export default {
                     Toast({
                         message: '登录成功'
                     })
+                    this.$router.replace("/chat")
                 } else {
                     Toast({
                         message: res.msg
