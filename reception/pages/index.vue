@@ -53,6 +53,7 @@ export default {
                 Indicator.close();
                  if (res.code === 200) {
                     Cookies.set('sessionId',res.data.sessionId);
+                    Cookies.set('userToken',res.data.token);
                     this.formData = {
                         phone: "",
                         passWord: ""

@@ -1,4 +1,5 @@
 /* 开发环境使用的userId与xdyToken */
+import Cookies from "js-cookie";
 // const userId =
 //   process.env.NODE_ENV === 'development' ? '7887504542812454912' : ''
 // const xdyToken =
@@ -20,6 +21,8 @@ export default function({ $axios, redirect }) {
       const result = response.data;
       const code = result.code;
       if (code === 5223) {
+        Cookies.set("sessionId", "");
+        Cookies.set("userToken", "");
         redirect("/");
       }
       return result;

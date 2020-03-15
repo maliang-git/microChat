@@ -24,20 +24,22 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(
     session({
         secret: "sessionId", // 对session id 相关的cookie 进行签名
-        resave: true,
-        saveUninitialized: false, // 是否保存未初始化的会话
+        resave: false,
+        saveUninitialized: true, // 是否保存未初始化的会话
         cookie: {
-            maxAge: 1000 * 60 * 1 // 设置 session 的有效时间，单位毫秒
+            maxAge: 1000 * 60 * 5 // 设置session的有效时间，单位毫秒
         }
     })
 );
 
 app.all("*", function(req, res, next) {
+    req.session._garbage = Date(); /** 每次请求更新session有效时间 */
+    req.session.touch();
     /** 请求拦截 */
     if (req.get("request-origin") && req.get("request-origin") === "WAP") {
         if (req.originalUrl == "/user-center/register") {
             next();
-            return
+            return;
         }
         if (req.originalUrl != "/user-center/login" && !req.session.sessionId) {
             res.send({
