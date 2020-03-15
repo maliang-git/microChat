@@ -29,6 +29,7 @@
 
 <script>
 import Logo from "~/components/public/Logo.vue";
+import { userCenter } from "~/api"
 import { Toast, Indicator } from 'mint-ui';
 export default {
     components: {
@@ -65,7 +66,7 @@ export default {
             Indicator.open({
                 spinnerType: 'fading-circle'
             });
-            this.$axios.post("/api/user-center/register", this.formData).then(res => {
+            this.$axios.post(userCenter.userReg, this.formData).then(res => {
                 Indicator.close();
                 if (res.code === 200) {
                     this.formData = {

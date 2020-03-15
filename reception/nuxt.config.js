@@ -59,7 +59,7 @@ module.exports = {
 
   proxy: {
     '/api': { 
-      target: 'http://localhost:3002/',//这个网站是开源的可以请求到数据的
+      target: 'http://127.0.0.1:3002/',//这个网站是开源的可以请求到数据的
       pathRewrite: {
          '^/api': ''
       }    

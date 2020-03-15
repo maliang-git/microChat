@@ -6,9 +6,8 @@
 export default function({ $axios, redirect }) {
   $axios.interceptors.request.use(
     config => {
-      config.headers['Content-Type'] = 'application/json';
-      config.headers["system-origin"] = "wap";
-    //   config.headers["X-Req-Area"] = "COMPANY_CD";
+      config.headers["Content-Type"] = "application/json";
+      config.headers["request-origin"] = "WAP";
       return config;
     },
     error => {
