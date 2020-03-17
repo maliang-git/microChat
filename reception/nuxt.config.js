@@ -7,7 +7,11 @@ module.exports = {
     title: "蜜语",
     meta: [
       { charset: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1,minimum-scale=1,maximum-scale=1, user-scalable=no, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1,minimum-scale=1,maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      },
       {
         hid: "description",
         name: "description",
@@ -31,14 +35,22 @@ module.exports = {
   /*
    ** Global CSS
    */
-  css: ["mint-ui/lib/style.css", "~assets/css/reset.css","~assets/font/iconfont/honey-icon.css"],
+  css: [
+    "mint-ui/lib/style.css",
+    "~assets/css/reset.css",
+    "~assets/font/iconfont/honey-icon.css"
+  ],
   /*
    ** Plugins to load before mounting the App
    */
-  plugins: ["@/plugins/mint-ui","@/plugins/compatible",{
-    src: '@/plugins/axios',
-    ssr: true
-  }],
+  plugins: [
+    "@/plugins/mint-ui",
+    "@/plugins/compatible",
+    {
+      src: "@/plugins/axios",
+      ssr: true
+    }
+  ],
   /*
    ** Nuxt.js dev-modules
    */
@@ -48,21 +60,37 @@ module.exports = {
    */
   modules: [
     // Doc: https://github.com/nuxt-community/axios-module#usage
-    '@nuxtjs/axios'
+    "@nuxtjs/axios"
   ],
   /*
-  ** Axios module configuration
-  */
+   ** Axios module configuration
+   */
   axios: {
-    proxy: true,
+    proxy: true
   },
 
   proxy: {
-    '/api': { 
-      target: 'http://127.0.0.1:3002/',//这个网站是开源的可以请求到数据的
+    "/api": {
+      target: "http://127.0.0.1:3002/", //这个网站是开源的可以请求到数据的
       pathRewrite: {
-         '^/api': ''
-      }    
+        "^/api": ""
+      }
+    }
+  },
+  router: {
+    extendRoutes(routes, resolve) {
+      routes.push(
+        {
+          name: "pageA",
+          path: "/strA-:id",
+          component: resolve(__dirname, "pages/test/pageA.vue")
+        },
+        {
+          name: "pageB",
+          path: "/strB/:id",
+          component: resolve(__dirname, "pages/test/pageB.vue")
+        }
+      );
     }
   },
   /*
