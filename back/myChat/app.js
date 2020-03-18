@@ -10,6 +10,19 @@ var usersCenter = require("./routes/user-center");
 
 var app = express();
 
+
+// 自定义跨域中间件(后台解决跨域))
+var allowCors = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+};
+app.use(allowCors); //使用跨域中间件
+
+
+
 require("./db/index"); //引入mongodb数据库配置
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -36,7 +49,8 @@ app.all("*", function(req, res, next) {
     req.session._garbage = Date(); /** 每次请求更新session有效时间 */
     req.session.touch();
     /** 请求拦截 */
-    if (req.get("request-origin") && req.get("request-origin") === "WAP") {
+    console.log(req.get("request-origin"))
+    // if (req.get("request-origin") && req.get("request-origin") === "WAP") {
         if (req.originalUrl == "/user-center/register") {
             next();
             return;
@@ -50,13 +64,13 @@ app.all("*", function(req, res, next) {
             return;
         }
         next();
-    } else {
-        res.send({
-            code: 414,
-            msg: "缺少请求来源request-origin",
-            data: null
-        });
-    }
+    // } else {
+    //     res.send({
+    //         code: 414,
+    //         msg: "缺少请求来源request-origin",
+    //         data: null
+    //     });
+    // }
 });
 
 /** 用户中心 */
