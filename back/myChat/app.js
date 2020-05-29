@@ -28,11 +28,11 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(
     session({
         secret: "sessionId", // 对session id 相关的cookie 进行签名
-        resave: false,
-        saveUninitialized: true, // 是否保存未初始化的会话
+        resave: false, // 强制保存，如果session没有被修改也要重新保存
+        saveUninitialized: true, // 如果原先没有session那么就设置，否则不设置
         cookie: {
-            maxAge: 1000 * 60 * 5 // 设置session的有效时间，单位毫秒
-        }
+            maxAge: 1000 * 60 * 5, // 设置session的有效时间，单位毫秒
+        },
     })
 );
 
@@ -43,12 +43,12 @@ app.all("*", interceptConfig);
 app.use("/user-center", usersCenter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get("env") === "development" ? err : {};
