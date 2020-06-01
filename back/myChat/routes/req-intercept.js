@@ -9,7 +9,7 @@ module.exports.interceptConfig = function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Content-Type,request-origin,user-token"); // 设置请求头中允许携带的参数
     res.header("Access-Control-Allow-Credentials", "true"); // 允许客户端携带证书式访问。保持跨域请求中的Cookie。注意：此处设true时，Access-Control-Allow-Origin的值不能为 '*'
     res.header("Access-control-max-age", 1000); // 设置请求通过预检后多少时间内不再检验，减少预请求发送次数
-
+   
     /** 每次请求更新session有效时间 */
     req.session._garbage = Date();
     req.session.touch();
