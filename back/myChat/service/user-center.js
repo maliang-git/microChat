@@ -81,7 +81,7 @@ module.exports.serviceSearchUser = async function (req) {
  * 设置用户备注名和标签
  */
 module.exports.serviceSetUserRemarks = async function (req) {
-    if (!req.query.remarksName && !req.query.labelName) {
+    if (!req.query.remarksName && req.query.remarksName != ''  && !req.query.labelName && req.query.labelName != '') {
         return { code: 413, msg: "缺少参数", data: null };
     }
     if (!req.query.userToken) {

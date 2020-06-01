@@ -85,6 +85,7 @@ module.exports.daoSearchUser = async function (req) {
      */
     var data = req.query;
     let queryCriteria;
+    let userArr = [];
     /* 手机号查询 */
     queryCriteria = {
         phone: data.keyData,
@@ -99,10 +100,46 @@ module.exports.daoSearchUser = async function (req) {
         overData,
         await mongoose.model("userCenter").find(queryCriteria)
     );
+
+    if (overData.length > 0) {
+        userArr = [
+            {
+                token: overData[0].token,
+                loginName: overData[0].loginName,
+                phone: overData[0].phone,
+                passWord: overData[0].passWord,
+                userName: overData[0].userName,
+                headImg: overData[0].headImg,
+                city: overData[0].city,
+                cityCode: overData[0].cityCode,
+            },
+        ];
+    }
+    /* 查询备注名与标签 */
+    if (userArr.length > 0) {
+        let userToken = overData[0].token;
+        let token = req.get("user-token");
+        let remarksAndLabel = await mongoose
+            .model("userRemarks")
+            .find({ token });
+        console.log("userToken", userToken);
+        console.log(remarksAndLabel);
+        if (remarksAndLabel.length > 0) {
+            userArr[0].remarksName = remarksAndLabel[0].remarksName[userToken]
+                ? remarksAndLabel[0].remarksName[userToken]
+                : "";
+            userArr[0].labelName = remarksAndLabel[0].labelName[userToken]
+                ? remarksAndLabel[0].labelName[userToken]
+                : "";
+        } else {
+            userArr[0].remarksName = "";
+            userArr[0].labelName = "";
+        }
+    }
     return {
         code: 200,
         msg: "操作成功",
-        data: overData,
+        data: userArr,
     };
 };
 
@@ -110,39 +147,46 @@ module.exports.daoSetUserRemarks = async function (req) {
     /**
      * 设置用户备注名和标签
      */
-
     let data = req.query;
     let queryCriteria = {
         token: req.get("user-token"),
         remarksName: {},
         labelName: {},
     };
-    if (data.remarksName) {
+    if (data.remarksName || data.remarksName == "") {
         queryCriteria.remarksName[data.userToken] = data.remarksName;
     }
-    if (data.labelName) {
+    if (data.labelName || data.labelName == "") {
         queryCriteria.labelName[data.userToken] = data.labelName;
     }
-    
-    console.log(queryCriteria);
+    console.log(queryCriteria)
 
-    // queryCriteria = {
-    //     phone: data.keyData,
-    // };
-
-    // let overData = [];
-    // overData = await mongoose.model("userCenter").find(queryCriteria);
-    // /* 用户名查询 */
-    // queryCriteria = {
-    //     loginName: data.keyData,
-    // };
-    // overData.concat(
-    //     overData,
-    //     await mongoose.model("userCenter").find(queryCriteria)
-    // );
-    // return {
-    //     code: 200,
-    //     msg: "操作成功",
-    //     data: overData,
-    // };
+    let overData = await mongoose
+        .model("userRemarks")
+        .find({ token: req.get("user-token") });
+    if (overData.length < 1) {
+        await mongoose.model("userRemarks").create(queryCriteria);
+    } else {
+        if (queryCriteria.remarksName) {
+            overData[0].remarksName = Object.assign(
+                {},
+                overData[0].remarksName,
+                queryCriteria.remarksName
+            );
+        }
+        if (queryCriteria.labelName) {
+            queryCriteria.labelName = Object.assign(
+                {},
+                overData[0].labelName,
+                queryCriteria.labelName
+            );
+        }
+        console.log(queryCriteria)
+        await mongoose.model("userRemarks").update(queryCriteria);
+    }
+    return {
+        code: 200,
+        msg: "设置成功",
+        data: {},
+    };
 };
