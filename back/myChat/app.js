@@ -4,27 +4,12 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 var session = require("express-session");
-var http = require('http');
-var WebSocket = require("ws");
 
-var server = http.createServer(app);
-var wss = new WebSocket.Server({ server });
+/* WebSocket */
+require("./routes/socket")
+
 /** 引入请求拦截中间件 */
 var { interceptConfig } = require("./routes/req-intercept");
-
-wss.on("connection", function connection(ws) {
-    console.log("链接成功！");
-    ws.on("message", function incoming(data) {
-        /**
-         * 把消息发送到所有的客户端
-         * wss.clients获取所有链接的客户端
-         */
-        wss.clients.forEach(function each(client) {
-            client.send(data);
-        });
-    });
-});
-
 
 /** 用户中心 */
 var usersCenter = require("./routes/user-center");
