@@ -7,6 +7,7 @@ const {
     daoLogin,
     daoSearchUser,
     daoSetUserRemarks,
+    daoLoginStateModify
 } = require("../dao/user-center");
 
 /**
@@ -64,6 +65,22 @@ module.exports.serviceLogin = async function (req) {
     }
     if (!passWord) {
         return { code: 413, msg: "缺少密码", data: null };
+    }
+};
+
+/**
+ * 修改用户登录状态
+ */
+module.exports.serviceLoginStateModify = async function (req) {
+    const { userToken, status } = req.body;
+    if (userToken && status) {
+        return await daoLoginStateModify(req);
+    }
+    if (!userToken) {
+        return { code: 413, msg: "缺少userToken", data: null };
+    }
+    if (!status) {
+        return { code: 413, msg: "缺少status", data: null };
     }
 };
 

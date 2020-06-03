@@ -11,6 +11,7 @@ const userCenter = new mongoose.Schema({
     headImg: String, // 头像
     city: String, // 城市
     cityCode: String, // 城市编码
+    status:Number, // 登录状态（1：在线 2：下线 ）
     content: Object, // 扩展字段
 });
 

@@ -7,7 +7,8 @@ const {
     serviceRegister,
     serviceLogin,
     serviceSearchUser,
-    serviceSetUserRemarks
+    serviceSetUserRemarks,
+    serviceLoginStateModify
 } = require("../service/user-center"); //引入服务层的方法
 
 /**
@@ -22,6 +23,13 @@ router.post("/register", async function (req, res, next) {
  * */
 router.post("/login", async function (req, res, next) {
     res.send(await serviceLogin(req));
+});
+
+/**
+ * 修改用户登录状态
+ * */
+router.post("/loginStateModify", async function (req, res, next) {
+    res.send(await serviceLoginStateModify(req));
 });
 
 router.post("/test", async function (req, res, next) {

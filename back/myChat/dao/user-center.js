@@ -59,7 +59,13 @@ module.exports.daoLogin = async function (req) {
         if (overData[0].passWord === data.passWord) {
             const sessionId = await Encrypt(new Date().getTime()); // 用当前时间戳生成sessionId并加密，用于验证用户每次操作是否登录过期
             req.session.sessionId = sessionId; // 登录成功，缓存session
-            console.log(req.session);
+
+            let loginUser = {
+                token: overData[0].token,
+                status: 1, // 登录状态（1：在线 2：下线 ）
+            }
+            await mongoose.model("userCenter").update(loginUser);
+
             let data = {
                 sessionId,
                 ...overData[0]._doc,
@@ -76,6 +82,36 @@ module.exports.daoLogin = async function (req) {
                 data: "密码错误",
             };
         }
+    }
+};
+
+
+module.exports.daoLoginStateModify = async function (req) {
+    /**
+     * 修改用户登录状态
+     */
+    var data = req.body;
+    const queryCriteria = {
+        token: data.userToken,
+    };
+    var overData = await mongoose.model("userCenter").find(queryCriteria);
+    if(overData.length === 1){
+        const userLoginInfo = {
+            token: data.userToken,
+            status: data.status,
+        }
+        await mongoose.model("userCenter").update(userLoginInfo);
+        return {
+            code: 200,
+            msg: "操作成功",
+            data: {},
+        };
+    }else{
+        return {
+            code: 200,
+            msg: "未查询到当前用户",
+            data: {},
+        };
     }
 };
 
@@ -159,7 +195,7 @@ module.exports.daoSetUserRemarks = async function (req) {
     if (data.labelName || data.labelName == "") {
         queryCriteria.labelName[data.userToken] = data.labelName;
     }
-    console.log(queryCriteria)
+    console.log(queryCriteria);
 
     let overData = await mongoose
         .model("userRemarks")
@@ -181,7 +217,7 @@ module.exports.daoSetUserRemarks = async function (req) {
                 queryCriteria.labelName
             );
         }
-        console.log(queryCriteria)
+        console.log(queryCriteria);
         await mongoose.model("userRemarks").update(queryCriteria);
     }
     return {
