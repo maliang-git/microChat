@@ -59,12 +59,9 @@ module.exports.daoLogin = async function (req) {
         if (overData[0].passWord === data.passWord) {
             const sessionId = await Encrypt(new Date().getTime()); // 用当前时间戳生成sessionId并加密，用于验证用户每次操作是否登录过期
             req.session.sessionId = sessionId; // 登录成功，缓存session
-
-            let loginUser = {
-                token: overData[0].token,
-                status: 1, // 登录状态（1：在线 2：下线 ）
-            }
-            await mongoose.model("userCenter").update(loginUser);
+            await mongoose
+                .model("userCenter")
+                .updateOne({ token: overData[0].token }, { status: 1 }); // 登录状态（1：在线 2：下线 ）
 
             let data = {
                 sessionId,
@@ -85,7 +82,6 @@ module.exports.daoLogin = async function (req) {
     }
 };
 
-
 module.exports.daoLoginStateModify = async function (req) {
     /**
      * 修改用户登录状态
@@ -95,18 +91,18 @@ module.exports.daoLoginStateModify = async function (req) {
         token: data.userToken,
     };
     var overData = await mongoose.model("userCenter").find(queryCriteria);
-    if(overData.length === 1){
+    if (overData.length === 1) {
         const userLoginInfo = {
             token: data.userToken,
             status: data.status,
-        }
+        };
         await mongoose.model("userCenter").update(userLoginInfo);
         return {
             code: 200,
             msg: "操作成功",
             data: {},
         };
-    }else{
+    } else {
         return {
             code: 200,
             msg: "未查询到当前用户",

@@ -12,6 +12,7 @@ const userCenter = new mongoose.Schema({
     city: String, // 城市
     cityCode: String, // 城市编码
     status:Number, // 登录状态（1：在线 2：下线 ）
+    socketId:String, // socketId
     content: Object, // 扩展字段
 });
 
