@@ -39,14 +39,13 @@ io.on("connection", function (socket) {
                 );
             }
             // 查询好友请求列表
-            let queryResult = await mongoose.model("message").find({ token: data.userToken });
+            let queryResult = await mongoose
+                .model("message")
+                .find({ token: data.userToken });
             // 返回好友请求列表
             if (queryResult.length > 0) {
                 // 返回好友列表
-                socket.emit(
-                    "friends_add_req",
-                    queryResult[0].friendsReq
-                );
+                socket.emit("friends_add_req", queryResult[0].friendsReq);
             }
         } else {
             socket.emit(id, "校验登录失败");
@@ -84,18 +83,18 @@ io.on("connection", function (socket) {
         }
         async function dataRest(type) {
             friendsReq.type = type;
-            if (type === "online") {
-                let otherPartySocketId = overData[0].socketId;
-                socket
-                    .to(otherPartySocketId)
-                    .emit("friends_add_req", [friendsReq]);
-            }
+            let otherPartySocketId = overData[0].socketId;
             if (queryResult.length === 0) {
                 let msg = {
                     token: data.friendToken,
                     friendsReq,
                 };
                 await mongoose.model("message").create(msg);
+                if (type === "online") {
+                    socket
+                        .to(otherPartySocketId)
+                        .emit("friends_add_req", [friendsReq]);
+                }
             } else {
                 let friendsReqList = queryResult[0].friendsReq;
                 friendsReqList.push(friendsReq);
@@ -105,6 +104,11 @@ io.on("connection", function (socket) {
                         { token: data.friendToken },
                         { friendsReq: friendsReqList }
                     );
+                if (type === "online") {
+                    socket
+                        .to(otherPartySocketId)
+                        .emit("friends_add_req", friendsReqList);
+                }
             }
         }
     });
