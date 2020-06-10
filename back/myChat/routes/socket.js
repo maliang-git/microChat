@@ -31,12 +31,21 @@ io.on("connection", function (socket) {
             let myFriendsList = await mongoose
                 .model("friends")
                 .find({ token: data.userToken });
-            console.log();
             if (myFriendsList.length > 0) {
                 // 返回好友列表
                 socket.emit(
                     "friends_add_success",
                     myFriendsList[0].friendsList
+                );
+            }
+            // 查询好友请求列表
+            let queryResult = await mongoose.model("message").find({ token: data.userToken });
+            // 返回好友请求列表
+            if (queryResult.length > 0) {
+                // 返回好友列表
+                socket.emit(
+                    "friends_add_req",
+                    queryResult[0].friendsReq
                 );
             }
         } else {
