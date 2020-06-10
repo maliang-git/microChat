@@ -2,6 +2,7 @@ var MongoClient = require("mongoose");
 require("../dao/model/userCenter"); //用户信息
 require("../dao/model/userRemarks"); //用户备注与标签
 require("../dao/model/message"); //用户socket消息
+require("../dao/model/friends"); //用户socket消息
 
 var dbURI = "mongodb://127.0.0.1:27017/codeNice";
 

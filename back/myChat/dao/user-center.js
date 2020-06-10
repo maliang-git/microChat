@@ -8,7 +8,6 @@ const mongoose = require("mongoose");
  * 引入加密插件
  * */
 const { Decrypt, Encrypt } = require("../plugs/secret.js");
-
 module.exports.daoRegister = async function (data) {
     /**
      * 注册账号
@@ -91,12 +90,16 @@ module.exports.daoLoginStateModify = async function (req) {
         token: data.userToken,
     };
     var overData = await mongoose.model("userCenter").find(queryCriteria);
+    console.log(data);
     if (overData.length === 1) {
-        const userLoginInfo = {
-            token: data.userToken,
-            status: data.status,
-        };
-        await mongoose.model("userCenter").update(userLoginInfo);
+        if (data.status === 2) {
+            await mongoose
+                .model("userCenter")
+                .updateOne(
+                    { token: data.userToken },
+                    { status: data.status, socketId: "" }
+                );
+        }
         return {
             code: 200,
             msg: "操作成功",
