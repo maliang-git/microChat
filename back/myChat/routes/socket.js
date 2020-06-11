@@ -232,10 +232,6 @@ io.on("connection", function (socket) {
                 { new: true }
             );
         socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
-        
-
-        // 初次添加好友为双方推送消息
-        
 
         socket.emit("tips_msg", "添加好友成功！");
     });
