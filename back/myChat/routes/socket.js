@@ -45,7 +45,10 @@ io.on("connection", function (socket) {
             // 返回好友请求列表
             if (queryResult.length > 0) {
                 // 返回好友列表
-                socket.emit("friends_add_req", queryResult[0].friendsReq);
+                socket.emit(
+                    "friends_add_req",
+                    queryResult[0].friendsReq.reverse()
+                );
             }
         } else {
             socket.emit(id, "校验登录失败");
@@ -57,6 +60,20 @@ io.on("connection", function (socket) {
         let userData = {
             token: data.friendToken,
         };
+
+        // 查询对方是否是我的好友
+        let isFrirend = await mongoose
+            .model("friends")
+            .find({ token: data.myToken });
+        if (isFrirend.length > 0) {
+            for (let i = 0; i < isFrirend[0].friendsList.length; i++) {
+                if (isFrirend[0].friendsList[i].token === data.friendToken) {
+                    socket.emit("tips_msg", "对方已经是您的好友了！");
+                    return false;
+                }
+            }
+        }
+
         // 查询对方是否在线
         let overData = await mongoose.model("userCenter").find(userData);
         // 查询请求人信息
@@ -65,11 +82,25 @@ io.on("connection", function (socket) {
             .find({ token: data.myToken });
         // 查询当前被请求人留言信息
         let queryResult = await mongoose.model("message").find(userData);
+        // 若已向对方发送过请求，对方并且未阅读
+        if (queryResult.length > 0) {
+            let reqList = queryResult[0].friendsReq;
+            for (let i = 0; i < reqList.length; i++) {
+                if (reqList[i].token === data.myToken && !reqList[i].isBrowse) {
+                    socket.emit(
+                        "tips_msg",
+                        "您已向对方发送过请求，请耐心等待对方回应!"
+                    );
+                    return;
+                }
+            }
+        }
+
         let friendsReq = {
             reqTime: dateFn(new Date(), "yyyy-MM-dd hh:mm:ss"), // 当前时间
-            reqPeople: queryReqInfo[0], // 请求人
+            ...queryReqInfo[0]._doc, // 请求人信息
             reqMsg: "加个好友吧！", // 请求留言
-            type: "", // 线上还是线下
+            status: 1, // (1: 请求添加好友，2：已是好友 3：不是好友，也未请求添加)
             isBrowse: false, // 是否阅读
         };
         if (overData[0].socketId) {
@@ -84,31 +115,31 @@ io.on("connection", function (socket) {
         async function dataRest(type) {
             friendsReq.type = type;
             let otherPartySocketId = overData[0].socketId;
+            let reqMsg;
             if (queryResult.length === 0) {
                 let msg = {
                     token: data.friendToken,
                     friendsReq,
                 };
-                await mongoose.model("message").create(msg);
-                if (type === "online") {
-                    socket
-                        .to(otherPartySocketId)
-                        .emit("friends_add_req", [friendsReq]);
-                }
+                reqMsg = await mongoose.model("message").create(msg);
             } else {
                 let friendsReqList = queryResult[0].friendsReq;
                 friendsReqList.push(friendsReq);
-                await mongoose
-                    .model("message")
-                    .updateOne(
-                        { token: data.friendToken },
-                        { friendsReq: friendsReqList }
-                    );
-                if (type === "online") {
-                    socket
-                        .to(otherPartySocketId)
-                        .emit("friends_add_req", friendsReqList);
-                }
+                mongoose.set("useFindAndModify", false);
+                reqMsg = await mongoose.model("message").findOneAndUpdate(
+                    { token: data.friendToken },
+                    {
+                        $set: {
+                            friendsReq: friendsReqList,
+                        },
+                    },
+                    { new: true }
+                );
+            }
+            if (type === "online") {
+                socket
+                    .to(otherPartySocketId)
+                    .emit("friends_add_req", reqMsg.friendsReq.reverse());
             }
         }
     });
@@ -121,6 +152,8 @@ io.on("connection", function (socket) {
         let myInfo = await mongoose
             .model("userCenter")
             .find({ token: data.myToken }); // 我方信息
+        otherInfo[0].status = 2;
+        myInfo[0].status = 2;
         let otherData = {
             token: data.friendToken,
             friendsList: myInfo[0],
@@ -179,8 +212,51 @@ io.on("connection", function (socket) {
             // 返回我的好友
             socket.emit("friends_add_success", myFriend);
         }
+
+        // 更新消息列表好友状态
+        let queryResult = await mongoose
+            .model("message")
+            .find({ token: data.myToken });
+        queryResult[0].friendsReq.forEach((item) => {
+            if (item.token === data.friendToken) {
+                item.status = 2; // 已是好友
+                item.isBrowse = true; // 已读
+            }
+        });
+        mongoose.set("useFindAndModify", false);
+        let msgReqList = await mongoose
+            .model("message")
+            .findOneAndUpdate(
+                { token: data.myToken },
+                { friendsReq: queryResult[0].friendsReq },
+                { new: true }
+            );
+        socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
+
         socket.emit("tips_msg", "添加好友成功！");
     });
+
+    // 更新阅读状态
+    socket.on("update_read_state", async function (data) {
+        // 更新消息列表好友状态
+        let queryResult = await mongoose
+            .model("message")
+            .find({ token: data.myToken });
+        queryResult[0].friendsReq.forEach((item) => {
+            if (item.token === data.friendToken) {
+                item.isBrowse = true; // 已读
+            }
+        });
+        let msgReqList = await mongoose
+            .model("message")
+            .findOneAndUpdate(
+                { token: data.myToken },
+                { friendsReq: queryResult[0].friendsReq },
+                { new: true }
+            );
+        socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
+    });
+
     // 断开事件
     socket.on("disconnect", async function (data) {
         const { id } = socket;
