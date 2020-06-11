@@ -179,7 +179,7 @@ io.on("connection", function (socket) {
             }
         } else {
             for (let i = 0; i < otherFriendsList[0].friendsList.length; i++) {
-                if (otherFriendsList[0].friendsList[i].token === data.myToken) {
+                if (otherFriendsList[0].friendsList[i].token === data.myToken && otherFriendsList[0].friendsList[i].status === 2) {
                     socket.emit("tips_msg", "对方已经是您的好友了！");
                     return;
                 }
@@ -204,7 +204,7 @@ io.on("connection", function (socket) {
             // 返回我的好友
             socket.emit("friends_add_success", [otherInfo[0]]);
         } else {
-            let myFriend = myInfo[0].friendsList;
+            let myFriend = myFriendsList[0].friendsList;
             myFriend.push(otherInfo[0]);
             await mongoose
                 .model("friends")
@@ -213,7 +213,7 @@ io.on("connection", function (socket) {
             socket.emit("friends_add_success", myFriend);
         }
 
-        // 更新消息列表好友状态
+        // 更新请求添加消息列表好友状态
         let queryResult = await mongoose
             .model("message")
             .find({ token: data.myToken });
@@ -232,6 +232,10 @@ io.on("connection", function (socket) {
                 { new: true }
             );
         socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
+        
+
+        // 初次添加好友为双方推送消息
+        
 
         socket.emit("tips_msg", "添加好友成功！");
     });
