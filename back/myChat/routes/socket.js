@@ -6,10 +6,11 @@ var app = express();
 var server = require("http").createServer(app);
 var io = require("socket.io")(server);
 server.listen(1000);
-
+mongoose.set("useFindAndModify", false);
 //socket部分
 io.on("connection", function (socket) {
     console.log("连接成功");
+
     //接收并处理客户端的hi事件
     socket.on("message", function (data) {
         console.log(data);
@@ -38,6 +39,7 @@ io.on("connection", function (socket) {
                     myFriendsList[0].friendsList
                 );
             }
+
             // 查询好友请求列表
             let queryResult = await mongoose
                 .model("message")
@@ -49,6 +51,14 @@ io.on("connection", function (socket) {
                     "friends_add_req",
                     queryResult[0].friendsReq.reverse()
                 );
+            }
+
+            // 查询聊天信息列表
+            const myChatInfo = await mongoose
+                .model("chatInfo")
+                .find({ myToken: data.userToken });
+            if (myChatInfo.length > 0) {
+                socket.emit("chat_info_rec", myChatInfo[0].msgList);
             }
         } else {
             socket.emit(id, "校验登录失败");
@@ -179,7 +189,10 @@ io.on("connection", function (socket) {
             }
         } else {
             for (let i = 0; i < otherFriendsList[0].friendsList.length; i++) {
-                if (otherFriendsList[0].friendsList[i].token === data.myToken && otherFriendsList[0].friendsList[i].status === 2) {
+                if (
+                    otherFriendsList[0].friendsList[i].token === data.myToken &&
+                    otherFriendsList[0].friendsList[i].status === 2
+                ) {
                     socket.emit("tips_msg", "对方已经是您的好友了！");
                     return;
                 }
@@ -233,6 +246,49 @@ io.on("connection", function (socket) {
             );
         socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
 
+        addChatInfo();
+        // 新增聊天信息
+        async function addChatInfo() {
+            const myMsg = {
+                userInfo: otherInfo[0],
+                msg: [
+                    {
+                        content: "我们已经是好友了，现在开始聊天吧。",
+                        type: 2, // 1:我方消息 2:对方消息
+                    },
+                ],
+            };
+            const friendMsg = {
+                userInfo: myInfo[0],
+                msg: [
+                    {
+                        content:
+                            "我通过了您的朋友验证请求，现在我们可以开始聊天了",
+                        type: 2, // 1:我方消息 2:对方消息
+                    },
+                ],
+            };
+            const myChatInfo = await mongoose // 当前用户
+                .model("chatInfo")
+                .findOneAndUpdate(
+                    { myToken: data.myToken },
+                    { $push: { msgList: myMsg } },
+                    { new: true }
+                );
+            const friendChatInfo = await mongoose // 对方用户
+                .model("chatInfo")
+                .findOneAndUpdate(
+                    { myToken: data.friendToken },
+                    { $push: { msgList: friendMsg } },
+                    { new: true }
+                );
+            // 发送消息给双方
+            socket.emit("chat_info_rec", myChatInfo.msgList);
+            socket
+                .to(otherInfo[0].socketId)
+                .emit("chat_info_rec", friendChatInfo.msgList);
+        }
+
         socket.emit("tips_msg", "添加好友成功！");
     });
 
@@ -255,6 +311,60 @@ io.on("connection", function (socket) {
                 { new: true }
             );
         socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
+    });
+
+    // 发送信息
+    socket.on("send_messge", async function (data) {
+        console.log(data);
+        let otherInfo = await mongoose
+            .model("userCenter")
+            .find({ token: data.friendToken }); // 对方信息
+        let myInfo = await mongoose
+            .model("userCenter")
+            .find({ token: data.myToken }); // 我方信息
+        addChatInfo();
+        // 新增聊天信息
+        async function addChatInfo() {
+            const myMsg = {
+                userInfo: otherInfo[0],
+                msg: [
+                    {
+                        content: data.messge,
+                        type: 1, // 1:我方消息 2:对方消息
+                        isRead: true,
+                    },
+                ],
+            };
+            const friendMsg = {
+                userInfo: myInfo[0],
+                msg: [
+                    {
+                        content: data.messge,
+                        type: 2, // 1:我方消息 2:对方消息
+                        isRead: false,
+                    },
+                ],
+            };
+            // const myChatInfo = await mongoose // 当前用户
+            //     .model("chatInfo")
+            //     .findOneAndUpdate(
+            //         { token: data.myToken },
+            //         { $push: { msgList: myMsg } },
+            //         { new: true }
+            //     );
+            // const friendChatInfo = await mongoose // 对方用户
+            //     .model("chatInfo")
+            //     .findOneAndUpdate(
+            //         { myToken: data.friendToken },
+            //         { $push: { msgList: friendMsg } },
+            //         { new: true }
+            //     );
+            // // 发送消息给双方
+            // socket.emit("chat_info_rec", myChatInfo.msgList);
+            // socket
+            //     .to(otherInfo[0].socketId)
+            //     .emit("chat_info_rec", friendChatInfo.msgList);
+        }
     });
 
     // 断开事件

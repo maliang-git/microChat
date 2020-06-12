@@ -19,7 +19,7 @@ module.exports.daoRegister = async function (data) {
     if (overData.length != 1) {
         // #生成唯一Token(当前时间戳+手机号)
         const token = new Date().getTime() + Encrypt(data.phone);
-        await mongoose.model("userCenter").create({
+        const user = await mongoose.model("userCenter").create({
             token, // 用户Token
             loginName: data.loginName, // 用户昵称（*必传）
             phone: data.phone, // 手机号（*必传）
@@ -30,6 +30,14 @@ module.exports.daoRegister = async function (data) {
             cityCode: "", // 城市编码
             content: {}, // 扩展字段
         });
+
+        /* 关联聊天信息 */
+        await mongoose.model("chatInfo").create({
+            assUser: user._id,
+            myToken: user.token,
+            msgList: [],
+        });
+
         return {
             code: 200,
             msg: "注册成功",
