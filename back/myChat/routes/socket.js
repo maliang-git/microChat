@@ -326,44 +326,49 @@ io.on("connection", function (socket) {
         // 新增聊天信息
         async function addChatInfo() {
             const myMsg = {
-                userInfo: otherInfo[0],
-                msg: [
-                    {
-                        content: data.messge,
-                        type: 1, // 1:我方消息 2:对方消息
-                        isRead: true,
-                    },
-                ],
+                content: data.messge,
+                type: 1, // 1:我方消息 2:对方消息
+                isRead: true,
             };
             const friendMsg = {
-                userInfo: myInfo[0],
-                msg: [
-                    {
-                        content: data.messge,
-                        type: 2, // 1:我方消息 2:对方消息
-                        isRead: false,
-                    },
-                ],
+                content: data.messge,
+                type: 2, // 1:我方消息 2:对方消息
+                isRead: false,
             };
-            // const myChatInfo = await mongoose // 当前用户
-            //     .model("chatInfo")
-            //     .findOneAndUpdate(
-            //         { token: data.myToken },
-            //         { $push: { msgList: myMsg } },
-            //         { new: true }
-            //     );
-            // const friendChatInfo = await mongoose // 对方用户
-            //     .model("chatInfo")
-            //     .findOneAndUpdate(
-            //         { myToken: data.friendToken },
-            //         { $push: { msgList: friendMsg } },
-            //         { new: true }
-            //     );
-            // // 发送消息给双方
-            // socket.emit("chat_info_rec", myChatInfo.msgList);
-            // socket
-            //     .to(otherInfo[0].socketId)
-            //     .emit("chat_info_rec", friendChatInfo.msgList);
+
+            const myChatInfo = await mongoose // 当前用户
+                .model("chatInfo")
+                .findOneAndUpdate(
+                    {
+                        myToken: data.myToken,
+                        "msgList.userInfo.token": otherInfo[0].token,
+                    },
+                    {
+                        $push: {
+                            "msgList.$.msg": myMsg,
+                        },
+                    },
+                    { new: true }
+                );
+            const friendChatInfo = await mongoose // 当前用户
+                .model("chatInfo")
+                .findOneAndUpdate(
+                    {
+                        myToken: data.friendToken,
+                        "msgList.userInfo.token": myInfo[0].token,
+                    },
+                    {
+                        $push: {
+                            "msgList.$.msg": friendMsg,
+                        },
+                    },
+                    { new: true }
+                );
+            //  发送消息给双方
+            socket.emit("chat_info_rec", myChatInfo.msgList);
+            socket
+                .to(otherInfo[0].socketId)
+                .emit("chat_info_rec", friendChatInfo.msgList);
         }
     });
 
