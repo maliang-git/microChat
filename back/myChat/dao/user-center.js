@@ -20,6 +20,7 @@ module.exports.daoRegister = async function (data) {
         // #生成唯一Token(当前时间戳+手机号)
         const token = new Date().getTime() + Encrypt(data.phone);
         const user = await mongoose.model("userCenter").create({
+            _id: token,
             token, // 用户Token
             loginName: data.loginName, // 用户昵称（*必传）
             phone: data.phone, // 手机号（*必传）
@@ -31,12 +32,12 @@ module.exports.daoRegister = async function (data) {
             content: {}, // 扩展字段
         });
 
-        /* 关联聊天信息 */
-        await mongoose.model("chatInfo").create({
-            assUser: user._id,
-            myToken: user.token,
-            msgList: [],
-        });
+        // /* 关联聊天信息 */
+        // await mongoose.model("chatInfo").create({
+        //     assUser: user._id,
+        //     myToken: user.token,
+        //     msgList: [],
+        // });
 
         return {
             code: 200,
@@ -155,6 +156,7 @@ module.exports.daoSearchUser = async function (req) {
                 headImg: overData[0].headImg,
                 city: overData[0].city,
                 cityCode: overData[0].cityCode,
+                _id: overData[0]._id,
             },
         ];
     }

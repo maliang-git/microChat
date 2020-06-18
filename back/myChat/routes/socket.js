@@ -19,47 +19,43 @@ io.on("connection", function (socket) {
     const { id } = socket;
     // 校验登录
     socket.on("verify_login", async function (data) {
-        if (data.userToken) {
-            let userData = {
-                token: data.userToken,
-            };
-            await mongoose
+        if (data.user_id) {
+            let str = await mongoose
                 .model("userCenter")
-                .updateOne(userData, { socketId: id });
+                .findByIdAndUpdate(data.user_id, { socketId: id });
             socket.emit(id, "校验登录成功");
+            // // 查询我的好友列表
+            // let myFriendsList = await mongoose
+            //     .model("friends")
+            //     .find({ token: data.userToken });
+            // if (myFriendsList.length > 0) {
+            //     // 返回好友列表
+            //     socket.emit(
+            //         "friends_add_success",
+            //         myFriendsList[0].friendsList
+            //     );
+            // }
 
-            // 查询我的好友列表
-            let myFriendsList = await mongoose
-                .model("friends")
-                .find({ token: data.userToken });
-            if (myFriendsList.length > 0) {
-                // 返回好友列表
-                socket.emit(
-                    "friends_add_success",
-                    myFriendsList[0].friendsList
-                );
-            }
+            // // 查询好友请求列表
+            // let queryResult = await mongoose
+            //     .model("message")
+            //     .find({ token: data.userToken });
+            // // 返回好友请求列表
+            // if (queryResult.length > 0) {
+            //     // 返回好友列表
+            //     socket.emit(
+            //         "friends_add_req",
+            //         queryResult[0].friendsReq.reverse()
+            //     );
+            // }
 
-            // 查询好友请求列表
-            let queryResult = await mongoose
-                .model("message")
-                .find({ token: data.userToken });
-            // 返回好友请求列表
-            if (queryResult.length > 0) {
-                // 返回好友列表
-                socket.emit(
-                    "friends_add_req",
-                    queryResult[0].friendsReq.reverse()
-                );
-            }
-
-            // 查询聊天信息列表
-            const myChatInfo = await mongoose
-                .model("chatInfo")
-                .find({ myToken: data.userToken });
-            if (myChatInfo.length > 0) {
-                socket.emit("chat_info_rec", myChatInfo[0].msgList);
-            }
+            // // 查询聊天信息列表
+            // const myChatInfo = await mongoose
+            //     .model("chatInfo")
+            //     .find({ myToken: data.userToken });
+            // if (myChatInfo.length > 0) {
+            //     socket.emit("chat_info_rec", myChatInfo[0].msgList);
+            // }
         } else {
             socket.emit(id, "校验登录失败");
         }
@@ -67,91 +63,154 @@ io.on("connection", function (socket) {
 
     // 请求添加好友
     socket.on("add_friends", async function (data) {
-        let userData = {
-            token: data.friendToken,
-        };
-
-        // 查询对方是否是我的好友
-        let isFrirend = await mongoose
-            .model("friends")
-            .find({ token: data.myToken });
-        if (isFrirend.length > 0) {
-            for (let i = 0; i < isFrirend[0].friendsList.length; i++) {
-                if (isFrirend[0].friendsList[i].token === data.friendToken) {
-                    socket.emit("tips_msg", "对方已经是您的好友了！");
-                    return false;
-                }
+        console.log(data);
+        let { user_one_id, user_two_id } = data;
+        try {
+            // 查询是否已经向对方发送过好友请求
+            let isRead = await mongoose.model("message").findOne({
+                _id: user_two_id,
+                "msgList.user_b": user_one_id,
+                msgList: { $elemMatch: { isBrowse: 0 } },
+            });
+            if (isRead && isRead.msgList.length > 0) {
+                socket.emit(
+                    "tips_msg",
+                    "您已向对方发送过请求，请耐心等待对方回应!"
+                );
+                // return;
             }
+        } catch (error) {
+            console.log(error);
         }
-
-        // 查询对方是否在线
-        let overData = await mongoose.model("userCenter").find(userData);
-        // 查询请求人信息
-        let queryReqInfo = await mongoose
-            .model("userCenter")
-            .find({ token: data.myToken });
-        // 查询当前被请求人留言信息
-        let queryResult = await mongoose.model("message").find(userData);
-        // 若已向对方发送过请求，对方并且未阅读
-        if (queryResult.length > 0) {
-            let reqList = queryResult[0].friendsReq;
-            for (let i = 0; i < reqList.length; i++) {
-                if (reqList[i].token === data.myToken && !reqList[i].isBrowse) {
-                    socket.emit(
-                        "tips_msg",
-                        "您已向对方发送过请求，请耐心等待对方回应!"
-                    );
-                    return;
-                }
-            }
-        }
-
-        let friendsReq = {
-            reqTime: dateFn(new Date(), "yyyy-MM-dd hh:mm:ss"), // 当前时间
-            ...queryReqInfo[0]._doc, // 请求人信息
-            reqMsg: "加个好友吧！", // 请求留言
-            status: 1, // (1: 请求添加好友，2：已是好友 3：不是好友，也未请求添加)
-            isBrowse: false, // 是否阅读
+        let msgItem = {
+            user_b: user_one_id, // 请求人id
+            reqMsg: "加个好友吧！",
         };
-        if (overData[0].socketId) {
-            console.log("用户在线！");
-            dataRest("online");
-            socket.emit("tips_msg", "对方在线，好友请求已发送!");
-        } else {
-            console.log("用户离线！");
-            dataRest("offline");
-            socket.emit("tips_msg", "对方离线，好友请求已发送!");
-        }
-        async function dataRest(type) {
-            friendsReq.type = type;
-            let otherPartySocketId = overData[0].socketId;
-            let reqMsg;
-            if (queryResult.length === 0) {
-                let msg = {
-                    token: data.friendToken,
-                    friendsReq,
-                };
-                reqMsg = await mongoose.model("message").create(msg);
-            } else {
-                let friendsReqList = queryResult[0].friendsReq;
-                friendsReqList.push(friendsReq);
-                mongoose.set("useFindAndModify", false);
-                reqMsg = await mongoose.model("message").findOneAndUpdate(
-                    { token: data.friendToken },
+        try {
+            reqMsg = await mongoose
+                .model("message")
+                .findByIdAndUpdate(
+                    user_two_id,
                     {
-                        $set: {
-                            friendsReq: friendsReqList,
+                        $push: {
+                            msgList: msgItem,
                         },
                     },
-                    { new: true }
-                );
-            }
-            if (type === "online") {
-                socket
-                    .to(otherPartySocketId)
-                    .emit("friends_add_req", reqMsg.friendsReq.reverse());
-            }
+                    { upsert: true, new: true } // upsert参数表示没有是否新建，new表示是否返回跟新后的数据
+                )
+                .populate({
+                    path: "user_a",
+                    populate: { path: "userCenter" },
+                });
+            console.log(reqMsg);
+            // let user_b_socket_id =
+            //     reqMsg.msgList[reqMsg.msgList.length - 1].user_b.socketId;
+
+            // socket.emit(
+            //     "tips_msg",
+            //     `${user_b_socket_id ? "对方在线" : "对方离线"}发送添加请求成功!`
+            // );
+            // socket
+            //     .to(user_b_socket_id)
+            //     .emit("friends_add_req", reqMsg.msgList.reverse());
+        } catch (error) {
+            console.log(error);
         }
+
+        // mongoose
+        //     .model("message")
+        //     .findOne({ _id: user_two_id })
+        //     .populate({
+        //         path: "msgList.user_b",
+        //         populate: { path: "userCenter" },
+        //     })
+        //     .exec(function (err, data) {
+        //         console.log(77, data);
+        //     });
+        // console.log(234, reqMsg);
+        // // 查询对方是否是我的好友
+        // let isFrirend = await mongoose
+        //     .model("friends")
+        //     .find({ token: data.myToken });
+        // if (isFrirend.length > 0) {
+        //     for (let i = 0; i < isFrirend[0].friendsList.length; i++) {
+        //         if (isFrirend[0].friendsList[i].token === data.friendToken) {
+        //             socket.emit("tips_msg", "对方已经是您的好友了！");
+        //             return false;
+        //         }
+        //     }
+        // }
+
+        // // 查询对方是否在线
+        // let overData = await mongoose.model("userCenter").find(userData);
+        // // 查询请求人信息
+        // let queryReqInfo = await mongoose
+        //     .model("userCenter")
+        //     .find({ token: data.myToken });
+        // // 查询当前被请求人留言信息
+        // let queryResult = await mongoose.model("message").find(userData);
+        // // 若已向对方发送过请求，对方并且未阅读
+        // if (queryResult.length > 0) {
+        //     let reqList = queryResult[0].friendsReq;
+        //     for (let i = 0; i < reqList.length; i++) {
+        //         if (reqList[i].token === data.myToken && !reqList[i].isBrowse) {
+        //             socket.emit(
+        //                 "tips_msg",
+        //                 "您已向对方发送过请求，请耐心等待对方回应!"
+        //             );
+        //             return;
+        //         }
+        //     }
+        // }
+
+        // let friendsReq = {
+        //     reqTime: dateFn(new Date(), "yyyy-MM-dd hh:mm:ss"), // 当前时间
+        //     ...queryReqInfo[0]._doc, // 请求人信息
+        //     reqMsg: "加个好友吧！", // 请求留言
+        //     status: 1, // (1: 请求添加好友，2：已是好友 3：不是好友，也未请求添加)
+        //     isBrowse: false, // 是否阅读
+        // };
+        // if (overData[0].socketId) {
+        //     console.log("用户在线！");
+        //     dataRest("online");
+        //     socket.emit("tips_msg", "对方在线，好友请求已发送!");
+        // } else {
+        //     console.log("用户离线！");
+        //     dataRest("offline");
+        //     socket.emit("tips_msg", "对方离线，好友请求已发送!");
+        // }
+        // async function dataRest(type) {
+        //     friendsReq.type = type;
+        //     let otherPartySocketId = overData[0].socketId;
+        //     let reqMsg;
+        //     if (queryResult.length === 0) {
+        //         let msg = {
+        //             token: data.friendToken,
+        //             friendsReq,
+        //         };
+        //         reqMsg = await mongoose.model("message").create(msg);
+        //         console.log(123, reqMsg);
+        //     } else {
+        //         let friendsReqList = queryResult[0].friendsReq;
+        //         friendsReqList.push(friendsReq);
+        //         mongoose.set("useFindAndModify", false);
+        //         reqMsg = await mongoose.model("message").findOneAndUpdate(
+        //             { token: data.friendToken },
+        //             {
+        //                 $set: {
+        //                     friendsReq: friendsReqList,
+        //                 },
+        //             },
+        //             { new: true }
+        //         );
+        //         console.log(123, reqMsg);
+        //     }
+        //     if (type === "online") {
+        //         socket
+        //             .to(otherPartySocketId)
+        //             .emit("friends_add_req", reqMsg.friendsReq.reverse());
+        //     }
+        // }
     });
 
     // 同意添加好友
