@@ -5,7 +5,8 @@ const { dateFn } = require("../../plugs/date.js");
 const mongoose = require("mongoose"); //引入mongodb
 const msgList = new mongoose.Schema({
     user_b: {
-        type: String,
+        // 消息发送人
+        type: mongoose.Schema.Types.ObjectId,
         ref: "userCenter",
     }, // 请求人信息
     createTime: {
@@ -17,10 +18,10 @@ const msgList = new mongoose.Schema({
         default: Date.now,
     },
     reqMsg: String, // 请求留言
-    status: {
+    isFriend: {
         type: Number,
-        default: 1,
-    }, // (1: 请求添加好友，2：已是好友 3：不是好友，也未请求添加)
+        default: 2,
+    }, // (0: 非好友，1：好友， 2：请求添加好友)
     isBrowse: {
         type: Number,
         default: 0,
@@ -28,7 +29,8 @@ const msgList = new mongoose.Schema({
 });
 const message = new mongoose.Schema({
     user_a: {
-        type: String,
+        // 消息所属用户
+        type: mongoose.Schema.Types.ObjectId,
         ref: "userCenter",
     },
     msgList: [msgList], // 消息列表

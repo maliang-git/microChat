@@ -12,6 +12,10 @@ const friendsList = new mongoose.Schema({
         type: String,
         default: dateFn(new Date(), "yyyy-MM-dd hh:mm:ss"),
     }, // 当前时间
+    isFriend: {
+        type: Number,
+        default: 1,
+    }, // (0: 非好友，1：好友， 2：请求添加好友)
 });
 const friends = new mongoose.Schema({
     user_a: {

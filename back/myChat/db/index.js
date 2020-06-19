@@ -4,13 +4,13 @@ require("../dao/model/userRemarks"); //用户备注与标签
 require("../dao/model/message"); //用户socket消息
 require("../dao/model/friends"); //用户socket消息
 require("../dao/model/chatInfo"); //用户socket消息
-
+require("../dao/model/room"); //用户socket消息
 var dbURI = "mongodb://127.0.0.1:27017/codeNice";
 
 MongoClient.connect(
     dbURI,
     { useNewUrlParser: true, useUnifiedTopology: true },
-    function(err) {
+    function (err) {
         if (err) {
             console.log("Connection Error:" + err);
         } else {
