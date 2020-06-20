@@ -1,10 +1,10 @@
 var MongoClient = require("mongoose");
 require("../dao/model/userCenter"); //用户信息
 require("../dao/model/userRemarks"); //用户备注与标签
-require("../dao/model/message"); //用户socket消息
-require("../dao/model/friends"); //用户socket消息
-require("../dao/model/chatInfo"); //用户socket消息
-require("../dao/model/room"); //用户socket消息
+require("../dao/model/message"); //用户添加好友请求
+require("../dao/model/friends"); //用户好友列表
+require("../dao/model/chat"); //用户聊天信息
+require("../dao/model/room"); //首页聊天列表
 var dbURI = "mongodb://127.0.0.1:27017/codeNice";
 
 MongoClient.connect(

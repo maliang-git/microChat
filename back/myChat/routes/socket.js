@@ -62,6 +62,9 @@ io.on("connection", function (socket) {
                     if (friend) {
                         socket.emit("friends_add_success", friend.friendsList);
                     }
+
+                    // 查询房间列表
+                    returnRoomList(data.user_id);
                 } else {
                     socket.emit(id, {
                         type: "signOut",
@@ -78,6 +81,21 @@ io.on("connection", function (socket) {
             });
         }
     });
+
+    // socket.on("get_room_list", async function (data) {
+    //     returnRoomList(data.userId);
+    // });
+
+    async function returnRoomList(user_id) {
+        // 查询房间列表
+        let room = await mongoose
+            .model("room")
+            .findById(user_id)
+            .populate("roomList.origin_user", fieldTable.user);
+        if (room) {
+            socket.emit("return_room_list", room.roomList);
+        }
+    }
 
     // 请求添加好友
     socket.on("add_friends", async function (data) {
@@ -134,7 +152,6 @@ io.on("connection", function (socket) {
                     path: "msgList.user_b",
                     select: fieldTable.user,
                 });
-            console.log(reqMsg);
             let user_a_socket_id = reqMsg.user_a.socketId;
             socket.emit(
                 "tips_msg",
@@ -202,166 +219,66 @@ io.on("connection", function (socket) {
                 .to(user_b_friends.user_a.socketId)
                 .emit("friends_add_success", user_b_friends.friendsList);
 
-            // // 生成聊天室
-            // let room = await mongoose.model("room").findByIdAndUpdate(
-            //     data.myId,
-            //     {
-            //         user: data.myId,
-            //         $push: {
-            //             roomList: {
-            //                 msgList: [
-            //                     {
-            //                         sendUser: data.friendID,
-            //                         msgContent: "我们是好友啦",
-            //                     },
-            //                 ],
-            //             },
-            //         },
-            //     },
-            //     { upsert: true, new: true }
-            // );
-            // console.log(123, room);
+            // 生成聊信息
+            await mongoose.model("chat").create({
+                content: "我通过了您的朋友验证请求，现在我们可以开始聊天了",
+                is_send: 0,
+                send_user: data.myId,
+                to_user: data.friendID,
+            });
+            await mongoose.model("chat").create({
+                content: "我们已经是好友了，现在开始聊天吧",
+                is_send: 0,
+                send_user: data.friendID,
+                to_user: data.myId,
+            });
+
+            // 相互生成首页房间
+            let send_user_room = await mongoose
+                .model("room")
+                .findByIdAndUpdate(
+                    data.myId,
+                    {
+                        aff_user: data.myId,
+                        $push: {
+                            roomList: {
+                                origin_user: data.friendID,
+                                lastMsg: "我们已经是好友了，现在开始聊天吧",
+                                unread_num: 1,
+                            },
+                        },
+                    },
+                    { upsert: true, new: true }
+                )
+                .populate("roomList.origin_user", fieldTable.user);
+            let to_user_room = await mongoose
+                .model("room")
+                .findByIdAndUpdate(
+                    data.friendID,
+                    {
+                        aff_user: data.friendID,
+                        $push: {
+                            roomList: {
+                                origin_user: data.myId,
+                                lastMsg:
+                                    "我通过了您的朋友验证请求，现在我们可以开始聊天了",
+                                unread_num: 1,
+                            },
+                        },
+                    },
+                    { upsert: true, new: true }
+                )
+                .populate("roomList.origin_user", fieldTable.user);
+            socket.emit("return_room_list", send_user_room.roomList);
+            socket
+                .to(user_b_friends.user_a.socketId)
+                .emit("return_room_list", to_user_room.roomList);
         } catch (error) {
             console.log("添加好友", error);
         }
-        return;
-        let otherInfo = await mongoose
-            .model("userCenter")
-            .find({ token: data.friendToken }); // 对方信息
-        let myInfo = await mongoose
-            .model("userCenter")
-            .find({ token: data.myToken }); // 我方信息
-        otherInfo[0].status = 2;
-        myInfo[0].status = 2;
-        let otherData = {
-            token: data.friendToken,
-            friendsList: myInfo[0],
-        };
-        let myData = {
-            token: data.myToken,
-            friendsList: otherInfo[0],
-        };
-        let otherFriendsList = await mongoose
-            .model("friends")
-            .find({ token: data.friendToken }); // 对方好友列表
-        let myFriendsList = await mongoose
-            .model("friends")
-            .find({ token: data.myToken }); // 我方好友列表
-
-        if (otherFriendsList.length === 0) {
-            await mongoose.model("friends").create(otherData);
-            // 若对方在线，把我的信息发送给对方
-            if (otherInfo[0].socketId) {
-                socket
-                    .to(otherInfo[0].socketId)
-                    .emit("friends_add_success", [myInfo[0]]);
-            }
-        } else {
-            for (let i = 0; i < otherFriendsList[0].friendsList.length; i++) {
-                if (
-                    otherFriendsList[0].friendsList[i].token === data.myToken &&
-                    otherFriendsList[0].friendsList[i].status === 2
-                ) {
-                    socket.emit("tips_msg", "对方已经是您的好友了！");
-                    return;
-                }
-            }
-            let otherFriend = otherFriendsList[0].friendsList;
-            otherFriend.push(myInfo[0]);
-            await mongoose
-                .model("friends")
-                .updateOne(
-                    { token: data.friendToken },
-                    { friendsList: otherFriend }
-                );
-            // 若对方在线，把我的信息发送给对方
-            if (otherInfo[0].socketId) {
-                socket
-                    .to(otherInfo[0].socketId)
-                    .emit("friends_add_success", otherFriend);
-            }
-        }
-        if (myFriendsList.length === 0) {
-            await mongoose.model("friends").create(myData);
-            // 返回我的好友
-            socket.emit("friends_add_success", [otherInfo[0]]);
-        } else {
-            let myFriend = myFriendsList[0].friendsList;
-            myFriend.push(otherInfo[0]);
-            await mongoose
-                .model("friends")
-                .updateOne({ token: data.myToken }, { friendsList: myFriend });
-            // 返回我的好友
-            socket.emit("friends_add_success", myFriend);
-        }
-
-        // 更新请求添加消息列表好友状态
-        let queryResult = await mongoose
-            .model("message")
-            .find({ token: data.myToken });
-        queryResult[0].friendsReq.forEach((item) => {
-            if (item.token === data.friendToken) {
-                item.status = 2; // 已是好友
-                item.isBrowse = true; // 已读
-            }
-        });
-        mongoose.set("useFindAndModify", false);
-        let msgReqList = await mongoose
-            .model("message")
-            .findOneAndUpdate(
-                { token: data.myToken },
-                { friendsReq: queryResult[0].friendsReq },
-                { new: true }
-            );
-        socket.emit("friends_add_req", msgReqList.friendsReq.reverse());
-
-        addChatInfo();
-        // 新增聊天信息
-        async function addChatInfo() {
-            const myMsg = {
-                userInfo: otherInfo[0],
-                msg: [
-                    {
-                        content: "我们已经是好友了，现在开始聊天吧。",
-                        type: 2, // 1:我方消息 2:对方消息
-                    },
-                ],
-            };
-            const friendMsg = {
-                userInfo: myInfo[0],
-                msg: [
-                    {
-                        content:
-                            "我通过了您的朋友验证请求，现在我们可以开始聊天了",
-                        type: 2, // 1:我方消息 2:对方消息
-                    },
-                ],
-            };
-            const myChatInfo = await mongoose // 当前用户
-                .model("chatInfo")
-                .findOneAndUpdate(
-                    { myToken: data.myToken },
-                    { $push: { msgList: myMsg } },
-                    { new: true }
-                );
-            const friendChatInfo = await mongoose // 对方用户
-                .model("chatInfo")
-                .findOneAndUpdate(
-                    { myToken: data.friendToken },
-                    { $push: { msgList: friendMsg } },
-                    { new: true }
-                );
-            // 发送消息给双方
-            socket.emit("chat_info_rec", myChatInfo.msgList);
-            socket
-                .to(otherInfo[0].socketId)
-                .emit("chat_info_rec", friendChatInfo.msgList);
-        }
-
-        socket.emit("tips_msg", "添加好友成功！");
     });
 
-    // 更新阅读状态
+    // 更新好友请求消息阅读状态
     socket.on("update_read_state", async function (data) {
         let updateInfo = await mongoose
             .model("message")
@@ -377,66 +294,140 @@ io.on("connection", function (socket) {
         socket.emit("friends_add_req", updateInfo.msgList.reverse());
     });
 
-    // 发送信息
-    socket.on("send_messge", async function (data) {
-        console.log(data);
-        let otherInfo = await mongoose
-            .model("userCenter")
-            .find({ token: data.friendToken }); // 对方信息
-        let myInfo = await mongoose
-            .model("userCenter")
-            .find({ token: data.myToken }); // 我方信息
-        addChatInfo();
-        // 新增聊天信息
-        async function addChatInfo() {
-            const myMsg = {
-                content: data.messge,
-                type: 1, // 1:我方消息 2:对方消息
-                isRead: true,
-            };
-            const friendMsg = {
-                content: data.messge,
-                type: 2, // 1:我方消息 2:对方消息
-                isRead: false,
-            };
+    // 更新房间消息阅读状态
+    socket.on("update_room_msg_read", async function (data) {
+        try {
+            let sadasd = await mongoose.model("room").findOneAndUpdate(
+                {
+                    _id: data.userId,
+                    "roomList._id": data.roomId,
+                },
+                { $set: { "roomList.$.unread_num": 0 } },
+                { upsert: true, new: true }
+            );
+        } catch (error) {
+            socket.emit("tips_msg", error);
+        }
+        returnRoomList(data.userId);
+    });
 
-            const myChatInfo = await mongoose // 当前用户
-                .model("chatInfo")
-                .findOneAndUpdate(
-                    {
-                        myToken: data.myToken,
-                        "msgList.userInfo.token": otherInfo[0].token,
-                    },
-                    {
-                        $push: {
-                            "msgList.$.msg": myMsg,
-                        },
-                    },
-                    { new: true }
-                );
-            const friendChatInfo = await mongoose // 当前用户
-                .model("chatInfo")
-                .findOneAndUpdate(
-                    {
-                        myToken: data.friendToken,
-                        "msgList.userInfo.token": myInfo[0].token,
-                    },
-                    {
-                        $push: {
-                            "msgList.$.msg": friendMsg,
-                        },
-                    },
-                    { new: true }
-                );
-            //  发送消息给双方
-            socket.emit("chat_info_rec", myChatInfo.msgList);
-            socket
-                .to(otherInfo[0].socketId)
-                .emit("chat_info_rec", friendChatInfo.msgList);
+    // 获取两天窗口房间信息
+    socket.on("get_room_info", async function (data) {
+        let { to_user, send_user } = data;
+        try {
+            let roomInfo = await mongoose.model("room").findOne(
+                {
+                    aff_user: send_user,
+                    "roomList.origin_user": to_user,
+                },
+                { "roomList.$": 1 } // $占位符，返回数组中第一个匹配的数组元素值(子集)
+            );
+            socket.emit("return_room_info", roomInfo.roomList[0]);
+        } catch (error) {
+            socket.emit("tips_msg", error);
         }
     });
-    // 加入指定房间
-    socket.on("join_room", async function (roomName) {});
+
+    // 获取消息列表
+    socket.on("get_msg_list", async function (data) {
+        let { send_user, to_user } = data;
+        let msgList = await mongoose
+            .model("chat")
+            .find({
+                send_user: {
+                    $in: [send_user, to_user],
+                },
+                to_user: {
+                    $in: [send_user, to_user],
+                },
+            })
+            .populate("send_user", fieldTable.user)
+            .populate("to_user", fieldTable.user);
+        socket.emit("return_msg_list", msgList);
+    });
+
+    // 发送信息
+    socket.on("send_messge", async function (data) {
+        let { to_user, send_user, messge } = data;
+        let to_user_socket_id;
+        try {
+            // 发送聊天信息
+            mongoose.model("chat").create(
+                {
+                    content: messge,
+                    send_user,
+                    to_user,
+                },
+                (error, res) => {
+                    if (error) {
+                        socket.emit("tips_msg", error);
+                        return;
+                    }
+                    mongoose
+                        .model("chat")
+                        .findById(res._id)
+                        .populate({
+                            path: "send_user",
+                            select: fieldTable.user,
+                        })
+                        .populate({
+                            path: "to_user",
+                            select: fieldTable.user + " socketId",
+                        })
+                        .exec((err, msg) => {
+                            if (err) {
+                                socket.emit("tips_msg", err);
+                                return;
+                            }
+                            socket.emit("receive_msg", msg);
+                            to_user_socket_id = msg.to_user.socketId;
+                            socket
+                                .to(msg.to_user.socketId)
+                                .emit("receive_msg", msg);
+                        });
+                }
+            );
+
+            // 更新房间数据
+            let send_room = await mongoose
+                .model("room")
+                .findOneAndUpdate(
+                    {
+                        _id: send_user,
+                        "roomList.origin_user": to_user,
+                    },
+                    {
+                        $set: {
+                            "roomList.$.lastMsg": messge,
+                        },
+                    },
+                    { new: true }
+                )
+                .populate("roomList.origin_user", fieldTable.user);
+            let to_room = await mongoose
+                .model("room")
+                .findOneAndUpdate(
+                    {
+                        _id: to_user,
+                        "roomList.origin_user": send_user,
+                    },
+                    {
+                        $set: {
+                            "roomList.$.lastMsg": messge,
+                        },
+                        $inc: { "roomList.$.unread_num": 1 },
+                    },
+                    { new: true }
+                )
+                .populate("roomList.origin_user", fieldTable.user);
+            socket.emit("return_room_list", send_room.roomList);
+            socket
+                .to(to_user_socket_id)
+                .emit("return_room_list", to_room.roomList);
+        } catch (error) {
+            socket.emit("tips_msg", error);
+        }
+    });
     // 断开事件
     socket.on("disconnect", async function (data) {
         const { id } = socket;
