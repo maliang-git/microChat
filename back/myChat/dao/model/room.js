@@ -1,16 +1,14 @@
 const mongoose = require("mongoose"); //引入mongodb
-const roomItem = new mongoose.Schema(
-    {
-        origin_user: {
-            // 来源用户
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "userCenter",
-        },
-        lastMsg: String,
-        unread_num: Number, // 未读消息数
+const roomItem = new mongoose.Schema({
+    origin_user: {
+        // 来源用户
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "userCenter",
     },
-    { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
-);
+    lastMsg: String,
+    unread_num: Number, // 未读消息数
+    nweData: Date,
+});
 const room = new mongoose.Schema({
     aff_user: {
         // 所属用户

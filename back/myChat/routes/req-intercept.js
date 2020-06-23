@@ -19,7 +19,12 @@ module.exports.interceptConfig = function (req, res, next) {
 
     /** 请求拦截 */
     if (req.get("request-origin") && req.get("request-origin") === "WAP") {
-        if ( req.originalUrl != "/user-center/login" && req.originalUrl != "/user-center/register" && !req.get("user-token")) {
+        console.log(123, req);
+        if (
+            req.originalUrl != "/user-center/login" &&
+            req.originalUrl != "/user-center/register" &&
+            !req.get("user-token")
+        ) {
             res.send({
                 code: 5223,
                 msg: "用户未登录",

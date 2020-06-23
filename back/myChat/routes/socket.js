@@ -25,6 +25,7 @@ io.on("connection", function (socket) {
     const { id } = socket;
     // 校验登录
     socket.on("verify_login", async function (data) {
+        console.log("用户id:", data);
         if (data.user_id) {
             try {
                 let isExist = await mongoose
@@ -245,6 +246,7 @@ io.on("connection", function (socket) {
                                 origin_user: data.friendID,
                                 lastMsg: "我们已经是好友了，现在开始聊天吧",
                                 unread_num: 1,
+                                nweData: new Date(),
                             },
                         },
                     },
@@ -263,6 +265,7 @@ io.on("connection", function (socket) {
                                 lastMsg:
                                     "我通过了您的朋友验证请求，现在我们可以开始聊天了",
                                 unread_num: 1,
+                                nweData: new Date(),
                             },
                         },
                     },
@@ -311,7 +314,7 @@ io.on("connection", function (socket) {
         returnRoomList(data.userId);
     });
 
-    // 获取两天窗口房间信息
+    // 获取聊天窗口房间信息
     socket.on("get_room_info", async function (data) {
         let { to_user, send_user } = data;
         try {
@@ -399,6 +402,7 @@ io.on("connection", function (socket) {
                     {
                         $set: {
                             "roomList.$.lastMsg": messge,
+                            "roomList.$.nweData": new Date(),
                         },
                     },
                     { new: true }
@@ -414,6 +418,7 @@ io.on("connection", function (socket) {
                     {
                         $set: {
                             "roomList.$.lastMsg": messge,
+                            "roomList.$.nweData": new Date(),
                         },
                         $inc: { "roomList.$.unread_num": 1 },
                     },
