@@ -331,9 +331,9 @@ io.on("connection", function (socket) {
         }
     });
 
-    // 获取消息列表
+    // 获取消息列表分页查询
     socket.on("get_msg_list", async function (data) {
-        let { send_user, to_user } = data;
+        let { send_user, to_user, page, limit } = data;
         let msgList = await mongoose
             .model("chat")
             .find({
@@ -344,9 +344,17 @@ io.on("connection", function (socket) {
                     $in: [send_user, to_user],
                 },
             })
+            .skip((page - 1) * limit)
+            .limit(15)
+            .sort({ _id: -1 })
             .populate("send_user", fieldTable.user)
             .populate("to_user", fieldTable.user);
-        socket.emit("return_msg_list", msgList);
+        let countTotal = await mongoose.model("chat").countDocuments();
+        console.log(12, countTotal);
+        socket.emit("return_msg_list", {
+            total: countTotal,
+            data: msgList.reverse(),
+        });
     });
 
     // 发送信息
