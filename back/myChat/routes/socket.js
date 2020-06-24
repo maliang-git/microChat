@@ -349,7 +349,17 @@ io.on("connection", function (socket) {
             .sort({ _id: -1 })
             .populate("send_user", fieldTable.user)
             .populate("to_user", fieldTable.user);
-        let countTotal = await mongoose.model("chat").countDocuments();
+        let countTotal = await mongoose
+            .model("chat")
+            .find({
+                send_user: {
+                    $in: [send_user, to_user],
+                },
+                to_user: {
+                    $in: [send_user, to_user],
+                },
+            })
+            .countDocuments();
         console.log(12, countTotal);
         socket.emit("return_msg_list", {
             total: countTotal,
