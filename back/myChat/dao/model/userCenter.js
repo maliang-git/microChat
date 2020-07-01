@@ -9,11 +9,12 @@ const userCenter = new mongoose.Schema({
     passWord: String, // 密码（*必传）
     userName: String, // 真实姓名
     headImg: String, // 头像
-    city: String, // 城市
-    cityCode: String, // 城市编码
     status: Number, // 登录状态（1：在线 2：下线 ）
     socketId: String, // socketId
+    gender: String, // 性别
     content: Object, // 扩展字段
+    cityInfo: Object, // 城市信息
+    autograph: String, // 签名
     createTime: {
         type: Date,
         default: Date.now,

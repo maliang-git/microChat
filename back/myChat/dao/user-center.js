@@ -26,8 +26,6 @@ module.exports.daoRegister = async function (data) {
             passWord: data.passWord, // 密码（*必传）
             userName: "", // 真实姓名
             headImg: "", // 头像
-            city: "", // 城市
-            cityCode: "", // 城市编码
             content: {}, // 扩展字段
         });
 

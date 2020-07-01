@@ -53,16 +53,7 @@ io.on("connection", function (socket) {
                     }
 
                     // 查询好友列表
-                    let friend = await mongoose
-                        .model("friends")
-                        .findById(data.user_id)
-                        .populate({
-                            path: "friendsList.user_b",
-                            select: fieldTable.user,
-                        });
-                    if (friend) {
-                        socket.emit("friends_add_success", friend.friendsList);
-                    }
+                    findFrendsList(data.user_id);
 
                     // 查询房间列表
                     returnRoomList(data.user_id);
@@ -82,6 +73,21 @@ io.on("connection", function (socket) {
             });
         }
     });
+
+    socket.on("find_frends_list", async function (data) {
+        findFrendsList(data.userId);
+    });
+
+    // 查询好友列表
+    async function findFrendsList(userId) {
+        let friend = await mongoose.model("friends").findById(userId).populate({
+            path: "friendsList.user_b",
+            select: fieldTable.user,
+        });
+        if (friend) {
+            socket.emit("friends_add_success", friend.friendsList);
+        }
+    }
 
     // socket.on("get_room_list", async function (data) {
     //     returnRoomList(data.userId);
@@ -365,6 +371,77 @@ io.on("connection", function (socket) {
             total: countTotal,
             data: msgList.reverse(),
         });
+    });
+
+    // 更改用户信息
+    socket.on("update_user_info", async function (data) {
+        // userId ： 用户id
+        // editType ： 更改类型  （head 更改头像，name 昵称，gender 更改性别， region 更改地区，autograph 更改签名）
+        // keyWords： 更改内容
+        let { userId, editType, keyWords } = data;
+        if (!userId) {
+            socket.emit("return_user_info", {
+                code: 414,
+                msg: "缺少userId",
+                data: {},
+            });
+            return;
+        }
+        if (!editType) {
+            socket.emit("return_user_info", {
+                code: 414,
+                msg: "缺少editType",
+                data: {},
+            });
+            return;
+        }
+        if (!keyWords) {
+            socket.emit("return_user_info", {
+                code: 414,
+                msg: "缺少keyWords",
+                data: {},
+            });
+            return;
+        }
+        let updateData = {};
+        switch (editType) {
+            case "head":
+                updatUserInfo();
+                break;
+            case "name":
+                updateData.loginName = keyWords;
+                updatUserInfo();
+                break;
+            case "gender":
+                updateData.gender = keyWords;
+                updatUserInfo();
+                break;
+            case "region":
+                updateData.cityInfo = keyWords;
+                updatUserInfo();
+                break;
+            case "autograph":
+                updateData.autograph = keyWords;
+                updatUserInfo();
+                break;
+            default:
+                socket.emit("return_user_info", {
+                    code: 414,
+                    msg: "editType类型不存在",
+                    data: {},
+                });
+                break;
+        }
+        async function updatUserInfo() {
+            let userInfo = await mongoose
+                .model("userCenter")
+                .findByIdAndUpdate(userId, updateData, { new: true });
+            socket.emit("return_user_info", {
+                code: 200,
+                msg: "操作成功",
+                data: userInfo,
+            });
+        }
     });
 
     // 发送信息
